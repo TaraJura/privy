@@ -17,6 +17,20 @@ class AnonymizationError(RuntimeError):
     pass
 
 
+# Common legal document role words used in party descriptors (e.g. "THE CONSULTANT").
+# These are structural labels, not actual entity names, and should not be anonymized.
+_LEGAL_ROLE_WORDS = frozenset({
+    "AGENT", "ASSIGNEE", "ASSIGNOR", "BENEFICIARY", "BORROWER",
+    "BUYER", "CLIENT", "COMPANY", "CONSULTANT", "CONTRACTOR",
+    "CUSTOMER", "DISTRIBUTOR", "EMPLOYEE", "EMPLOYER", "EXECUTOR",
+    "GUARANTOR", "INVESTOR", "LANDLORD", "LENDER", "LESSEE",
+    "LESSOR", "LICENSEE", "LICENSOR", "PARTNER", "PARTNERS",
+    "PARTIES", "PARTY", "PRINCIPAL", "PROVIDER", "RECIPIENT",
+    "SELLER", "SUBCONTRACTOR", "SUPPLIER", "TENANT", "TRUSTEE",
+    "VENDOR",
+})
+
+
 @dataclass
 class ProcessingReport:
     paragraphs_scanned: int
@@ -174,6 +188,7 @@ def _select_entities(
         if entity.label in entity_types
         and entity.confidence >= min_confidence
         and entity.end > entity.start
+        and not _is_legal_role_label(entity.text)
     ]
 
     if not candidates:
@@ -224,6 +239,14 @@ def _placeholder_replacements(text: str, mapping: MappingData) -> list[SpanRepla
         current_end = end
 
     return replacements
+
+
+def _is_legal_role_label(text: str) -> bool:
+    """Return True if *text* is a legal document role label like 'THE CONSULTANT'."""
+    upper = text.strip().upper()
+    if not upper.startswith("THE "):
+        return False
+    return upper[4:].strip() in _LEGAL_ROLE_WORDS
 
 
 def _overlaps(start_a: int, end_a: int, start_b: int, end_b: int) -> bool:

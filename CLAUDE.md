@@ -119,6 +119,7 @@ GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles 
 - **Run-level replacement** preserves bold/italic/color formatting
 - **All 7 entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID, NATIONAL_ID
 - **Deduplication** — same (label, original) pair → same placeholder across entire document
+- **Legal role label filtering** — all-caps party descriptors in legal docs (e.g. "THE CONSULTANT", "THE CLIENT") are excluded from entity detection via an explicit set of ~36 role words checked in `_select_entities()`
 - **Overlap resolution** — higher confidence and longer spans win, processed in `_select_entities()`
 - **Local model cache** in `models/` directory (gitignored) — downloads once on first run, loads locally after
 - **Model stored in repo** at `models/urchade--gliner_medium-v2.1/`, not in `~/.cache/huggingface`
