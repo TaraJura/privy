@@ -9,7 +9,7 @@ from docx import Document
 
 from .detector import BaseDetector
 from .docx_engine import apply_replacements_to_paragraph, iter_document_paragraphs, paragraph_text
-from .mapping_store import MappingData, read_encrypted_mapping, write_encrypted_mapping
+from .mapping_store import MappingData, read_mapping, write_mapping
 from .types import EntitySpan, SpanReplacement, VALID_ENTITY_TYPES
 
 
@@ -35,7 +35,6 @@ def anonymize_docx(
     input_path: Path,
     output_path: Path,
     map_path: Path,
-    map_password: str,
     detector: BaseDetector,
     entity_types: Iterable[str],
     min_confidence: float = 0.5,
@@ -87,7 +86,7 @@ def anonymize_docx(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(output_path))
 
-    write_encrypted_mapping(path=map_path, mapping=mapping, password=map_password)
+    write_mapping(path=map_path, mapping=mapping)
 
     report = ProcessingReport(
         paragraphs_scanned=paragraphs_scanned,
@@ -106,10 +105,9 @@ def deanonymize_docx(
     input_path: Path,
     output_path: Path,
     map_path: Path,
-    map_password: str,
     report_path: Path | None = None,
 ) -> ProcessingReport:
-    mapping = read_encrypted_mapping(path=map_path, password=map_password)
+    mapping = read_mapping(path=map_path)
     if not mapping.placeholders:
         raise AnonymizationError("Mapping has no placeholders. Nothing to deanonymize.")
 

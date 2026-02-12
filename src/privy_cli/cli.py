@@ -16,7 +16,7 @@ app.add_typer(models_app, name="models")
 def _resolve_map_path(map_path: Optional[Path], output_path: Path) -> Path:
     if map_path is not None:
         return map_path
-    return output_path.with_suffix(output_path.suffix + ".map.enc.json")
+    return output_path.with_suffix(output_path.suffix + ".map.json")
 
 
 @app.command("anonymize")
@@ -26,11 +26,7 @@ def anonymize_command(
     map_path: Optional[Path] = typer.Option(
         None,
         "--map",
-        help="Encrypted reversible mapping path. Defaults to <output>.map.enc.json",
-    ),
-    map_password: str = typer.Option(
-        ..., "--map-password", envvar="PRIVY_MAP_PASSWORD", hide_input=True, prompt=True,
-        confirmation_prompt=True, help="Password used to encrypt mapping file."
+        help="Mapping file path. Defaults to <output>.map.json",
     ),
     detector: str = typer.Option(
         "gliner",
@@ -74,7 +70,6 @@ def anonymize_command(
             input_path=input_docx,
             output_path=output_docx,
             map_path=resolved_map_path,
-            map_password=map_password,
             detector=detector_impl,
             entity_types=entity_type,
             min_confidence=min_confidence,
@@ -85,7 +80,7 @@ def anonymize_command(
         raise typer.Exit(1)
 
     typer.echo(f"Anonymized document: {output_docx}")
-    typer.echo(f"Encrypted mapping: {resolved_map_path}")
+    typer.echo(f"Mapping: {resolved_map_path}")
     typer.echo(
         "Summary: "
         f"paragraphs={report.paragraphs_scanned}, "
@@ -98,11 +93,7 @@ def anonymize_command(
 def deanonymize_command(
     input_docx: Path = typer.Argument(..., exists=True, readable=True, help="Anonymized .docx file."),
     output_docx: Path = typer.Option(..., "-o", "--output", help="Target restored .docx file."),
-    map_path: Path = typer.Option(..., "--map", exists=True, readable=True, help="Encrypted mapping path."),
-    map_password: str = typer.Option(
-        ..., "--map-password", envvar="PRIVY_MAP_PASSWORD", hide_input=True, prompt=True,
-        help="Password used to decrypt mapping file."
-    ),
+    map_path: Path = typer.Option(..., "--map", exists=True, readable=True, help="Mapping file path."),
     report_path: Optional[Path] = typer.Option(None, "--report", help="Optional JSON processing report."),
 ) -> None:
     if input_docx.suffix.lower() != ".docx":
@@ -118,7 +109,6 @@ def deanonymize_command(
             input_path=input_docx,
             output_path=output_docx,
             map_path=map_path,
-            map_password=map_password,
             report_path=report_path,
         )
     except (AnonymizationError, OSError, ValueError) as exc:

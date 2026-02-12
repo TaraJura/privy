@@ -6,7 +6,6 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: typer>=0.12.3
 Requires-Dist: python-docx>=1.1.2
-Requires-Dist: cryptography>=43.0.0
 Requires-Dist: gliner>=0.2.5
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0.0; extra == "dev"

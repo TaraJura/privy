@@ -15,7 +15,7 @@ def test_anonymize_then_deanonymize_docx_keeps_text_and_styles(tmp_path: Path) -
     input_path = tmp_path / "input.docx"
     anonymized_path = tmp_path / "anonymized.docx"
     restored_path = tmp_path / "restored.docx"
-    map_path = tmp_path / "mapping.enc.json"
+    map_path = tmp_path / "mapping.json"
 
     source_doc = Document()
     paragraph = source_doc.add_paragraph()
@@ -29,7 +29,6 @@ def test_anonymize_then_deanonymize_docx_keeps_text_and_styles(tmp_path: Path) -
         input_path=input_path,
         output_path=anonymized_path,
         map_path=map_path,
-        map_password="test-pass",
         detector=detector,
         entity_types=["PERSON", "COMPANY", "ADDRESS", "EMAIL"],
     )
@@ -44,7 +43,6 @@ def test_anonymize_then_deanonymize_docx_keeps_text_and_styles(tmp_path: Path) -
         input_path=anonymized_path,
         output_path=restored_path,
         map_path=map_path,
-        map_password="test-pass",
     )
 
     assert _document_text(restored_path) == _document_text(input_path)
