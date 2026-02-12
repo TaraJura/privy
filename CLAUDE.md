@@ -1,5 +1,9 @@
 # CLAUDE.md — privy-cli
 
+## CRITICAL RULE
+
+**After every code change, you MUST update this CLAUDE.md to reflect the current state of the project.** This includes but is not limited to: adding/removing files, changing module responsibilities, adding/removing dependencies, changing entity types, modifying CLI commands, altering architecture, or changing conventions. CLAUDE.md must always be the single source of truth for the project structure and design.
+
 ## Project Overview
 
 **privy-cli** is a local CLI utility for reversible `.docx` anonymization using GLiNER (local zero-shot NER model) + regex patterns. It detects sensitive entities in Word documents, replaces them with numbered placeholders, and stores a JSON mapping file to allow later restoration.
