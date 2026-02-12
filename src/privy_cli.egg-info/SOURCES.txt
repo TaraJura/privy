@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/privy_cli/__init__.py
+src/privy_cli/anonymizer.py
+src/privy_cli/cli.py
+src/privy_cli/detector.py
+src/privy_cli/docx_engine.py
+src/privy_cli/mapping_store.py
+src/privy_cli/types.py
+src/privy_cli.egg-info/PKG-INFO
+src/privy_cli.egg-info/SOURCES.txt
+src/privy_cli.egg-info/dependency_links.txt
+src/privy_cli.egg-info/entry_points.txt
+src/privy_cli.egg-info/requires.txt
+src/privy_cli.egg-info/top_level.txt
+tests/test_docx_roundtrip.py
+tests/test_mapping_store.py

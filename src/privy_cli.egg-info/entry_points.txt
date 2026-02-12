@@ -1,0 +1,2 @@
+[console_scripts]
+privy = privy_cli.cli:app
