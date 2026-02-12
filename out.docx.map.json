@@ -1,10 +1,14 @@
 {
   "version": 1,
-  "created_at": "2026-02-12T14:48:10.845435+00:00",
+  "created_at": "2026-02-12T15:00:45.634299+00:00",
   "placeholders": {
     "COMPANY_001": {
       "label": "COMPANY",
       "original": "PROJECT DELTA"
+    },
+    "DOC_ID_001": {
+      "label": "DOC_ID",
+      "original": "SEC-9920-X"
     },
     "COMPANY_002": {
       "label": "COMPANY",
@@ -25,6 +29,10 @@
     "ADDRESS_003": {
       "label": "ADDRESS",
       "original": "Czech Republic"
+    },
+    "EMAIL_001": {
+      "label": "EMAIL",
+      "original": "jiri.novak.freelance@gmail.com"
     },
     "PHONE_001": {
       "label": "PHONE",
@@ -58,6 +66,10 @@
       "label": "COMPANY",
       "original": "Accounting Department"
     },
+    "EMAIL_002": {
+      "label": "EMAIL",
+      "original": "finance@acme-global.cz"
+    },
     "PERSON_005": {
       "label": "PERSON",
       "original": "consultant"
@@ -86,29 +98,33 @@
       "label": "PERSON",
       "original": "Hana Malá"
     },
-    "PHONE_003": {
-      "label": "PHONE",
-      "original": "Budějovická 12"
+    "EMAIL_003": {
+      "label": "EMAIL",
+      "original": "hana.mala@corp-security.com"
+    },
+    "ADDRESS_008": {
+      "label": "ADDRESS",
+      "original": "Budějovická"
+    },
+    "NATIONAL_ID_001": {
+      "label": "NATIONAL_ID",
+      "original": "880512/0012"
     },
     "PERSON_008": {
       "label": "PERSON",
-      "original": "PERSON_1"
+      "original": "Jana Dvořáková"
     },
-    "EMAIL_001": {
-      "label": "EMAIL",
-      "original": "ADDRESS_1"
+    "NATIONAL_ID_002": {
+      "label": "NATIONAL_ID",
+      "original": "925601/4432"
     },
     "PERSON_009": {
       "label": "PERSON",
-      "original": "Project Lead"
-    },
-    "PERSON_010": {
-      "label": "PERSON",
-      "original": "Jana Dvořáková"
-    },
-    "PERSON_011": {
-      "label": "PERSON",
       "original": "Petr Kučera"
+    },
+    "NATIONAL_ID_003": {
+      "label": "NATIONAL_ID",
+      "original": "750303/1189"
     }
   }
 }

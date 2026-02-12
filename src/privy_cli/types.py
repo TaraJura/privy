@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-VALID_ENTITY_TYPES = {"PERSON", "COMPANY", "ADDRESS", "EMAIL", "PHONE"}
+VALID_ENTITY_TYPES = {"PERSON", "COMPANY", "ADDRESS", "EMAIL", "PHONE", "DOC_ID", "NATIONAL_ID"}
 
 
 @dataclass(frozen=True)

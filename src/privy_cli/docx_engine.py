@@ -6,14 +6,32 @@ from typing import Iterable
 from docx.document import Document as DocxDocument
 from docx.table import _Cell, Table
 from docx.text.paragraph import Paragraph
+from docx.text.run import Run
+from lxml import etree
 
 from .types import SpanReplacement
+
+_W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_W_R = f"{{{_W_NS}}}r"
+_W_HYPERLINK = f"{{{_W_NS}}}hyperlink"
 
 
 @dataclass(frozen=True)
 class ParagraphRef:
     paragraph: Paragraph
     location: str
+
+
+def _all_runs(paragraph: Paragraph) -> list[Run]:
+    """Return all Run objects in document order, including those inside hyperlinks."""
+    runs: list[Run] = []
+    for child in paragraph._element:
+        if child.tag == _W_R:
+            runs.append(Run(child, paragraph))
+        elif child.tag == _W_HYPERLINK:
+            for r_elem in child.findall(_W_R):
+                runs.append(Run(r_elem, paragraph))
+    return runs
 
 
 def iter_document_paragraphs(doc: DocxDocument) -> Iterable[ParagraphRef]:
@@ -36,17 +54,17 @@ def iter_document_paragraphs(doc: DocxDocument) -> Iterable[ParagraphRef]:
 
 
 def paragraph_text(paragraph: Paragraph) -> str:
-    return "".join(run.text for run in paragraph.runs)
+    return "".join(run.text for run in _all_runs(paragraph))
 
 
 def apply_replacements_to_paragraph(paragraph: Paragraph, replacements: list[SpanReplacement]) -> int:
     if not replacements:
         return 0
 
-    # Run offsets are calculated against the original paragraph text.
+    runs = _all_runs(paragraph)
     run_bounds = []
     cursor = 0
-    for run in paragraph.runs:
+    for run in runs:
         text = run.text
         length = len(text)
         run_bounds.append((run, cursor, cursor + length))

@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**privy-cli** is a local CLI utility for reversible `.docx` anonymization using GLiNER (local zero-shot NER model). It detects sensitive entities (PERSON, COMPANY, ADDRESS, EMAIL, PHONE) in Word documents, replaces them with numbered placeholders, and stores a JSON mapping file to allow later restoration.
+**privy-cli** is a local CLI utility for reversible `.docx` anonymization using GLiNER (local zero-shot NER model) + regex patterns. It detects sensitive entities in Word documents, replaces them with numbered placeholders, and stores a JSON mapping file to allow later restoration.
 
-Key properties: fully local (no API calls), GLiNER-based NER, run-level formatting preservation, plain JSON mapping files.
+Key properties: fully local (no API calls), GLiNER + regex hybrid detection, run-level formatting preservation, plain JSON mapping files, hyperlink-aware.
 
 ## Quick Reference
 
@@ -15,16 +15,14 @@ pip install -e ".[dev]"
 # Run tests
 pytest
 
-# Anonymize (all entity types by default, GLiNER detector by default)
+# Anonymize (all entity types detected by default)
 privy anonymize input.docx -o out/anonymized.docx
 
 # Deanonymize
 privy deanonymize out/anonymized.docx -o out/restored.docx --map out/anonymized.docx.map.json
 
-# List detectors
+# List/validate detectors
 privy models list
-
-# Validate detector
 privy models validate
 ```
 
@@ -34,10 +32,10 @@ privy models validate
 src/privy_cli/
 ├── __init__.py          # Package version (__version__ = "0.1.0")
 ├── types.py             # EntitySpan, SpanReplacement dataclasses; VALID_ENTITY_TYPES
-├── cli.py               # Typer CLI app — commands: anonymize, deanonymize, models list/validate
+├── cli.py               # Typer CLI — commands: anonymize, deanonymize, models list/validate
 ├── detector.py          # BaseDetector (ABC), GlinerDetector (default), CommandDetector, HeuristicDetector
 ├── anonymizer.py        # anonymize_docx(), deanonymize_docx() — core pipeline
-├── docx_engine.py       # iter_document_paragraphs(), apply_replacements_to_paragraph() — run-level ops
+├── docx_engine.py       # Paragraph traversal (incl. hyperlinks), run-level text replacement
 └── mapping_store.py     # MappingData, write_mapping(), read_mapping() — plain JSON
 
 tests/
@@ -53,15 +51,31 @@ examples/
 
 ```
 CLI (cli.py / Typer)
-  └─ anonymizer.py  ←  detector.py (Strategy pattern: GLiNER | Command | Heuristic)
-       ├─ docx_engine.py   (paragraph traversal + run-level text replacement)
+  └─ anonymizer.py  ←  detector.py (Strategy: GLiNER + regex | Command | Heuristic)
+       ├─ docx_engine.py   (paragraph traversal + run-level replacement)
        ├─ mapping_store.py  (plain JSON mapping read/write)
        └─ types.py          (EntitySpan, SpanReplacement)
 ```
 
-**Data flow (anonymize):** Input.docx → iterate paragraphs (body, tables, headers, footers) → detect entities via GLiNER → filter by type/confidence/overlap → generate placeholders (PERSON_001) → replace at run level → save anonymized docx + JSON mapping.
+**Data flow (anonymize):** Input.docx → iterate paragraphs (body, tables, headers, footers) → extract text including hyperlink runs → detect entities → filter by type/confidence/overlap → generate placeholders (PERSON_001) → replace at run level → save anonymized docx + JSON mapping.
 
 **Data flow (deanonymize):** Anonymized.docx + JSON mapping → find placeholders in text → replace with originals at run level → save restored docx.
+
+## Entity Detection Strategy
+
+The default `GlinerDetector` uses a hybrid approach:
+
+| Entity Type | Detection Method | Why |
+|-------------|-----------------|-----|
+| PERSON | GLiNER model | Best at natural language names |
+| COMPANY | GLiNER model | Best at organization names |
+| ADDRESS | GLiNER model | Best at location/address text |
+| EMAIL | Regex | Structured pattern, GLiNER unreliable |
+| PHONE | Regex | Structured pattern, GLiNER misclassifies (e.g. addresses as phones) |
+| DOC_ID | Regex | Alphanumeric codes like SEC-9920-X |
+
+GLiNER labels: `PERSON→"person"`, `COMPANY→"organization"`, `ADDRESS→"location"`.
+GLiNER results for PHONE/EMAIL/DOC_ID are ignored — regex handles those.
 
 ## Code Conventions
 
@@ -69,7 +83,7 @@ CLI (cli.py / Typer)
 - `from __future__ import annotations` in every module
 - Modern type hints: `str | None`, `list[EntitySpan]`, `dict[str, str]`
 - Frozen dataclasses for value types (`EntitySpan`, `SpanReplacement`, `ParagraphRef`)
-- Private helpers prefixed with `_` (e.g., `_normalize_label`, `_overlaps`)
+- Private helpers prefixed with `_` (e.g., `_normalize_label`, `_all_runs`)
 - Constants as `UPPER_SNAKE_CASE` (`VALID_ENTITY_TYPES`, `GLINER_LABEL_MAP`)
 - Custom exceptions inherit from `RuntimeError`: `DetectorError`, `AnonymizationError`, `MappingStoreError`
 - Relative imports within the package (`from .types import EntitySpan`)
@@ -78,34 +92,16 @@ CLI (cli.py / Typer)
 
 - **typer** >= 0.12.3 — CLI framework
 - **python-docx** >= 1.1.2 — Word document manipulation
-- **gliner** >= 0.2.5 — Local zero-shot NER (GLiNER model)
+- **gliner** >= 0.2.5 — Local zero-shot NER model
 - **pytest** >= 8.0.0 — testing (dev dependency)
-
-## Build System
-
-- **setuptools** >= 68 with `src` layout (`package-dir = {"" = "src"}`)
-- Entry point: `privy = "privy_cli.cli:app"`
-- pytest configured with `pythonpath = ["src"]`
-
-## Environment Variables
-
-- `PRIVY_MODEL_CMD` — model command for command detector
-- `PRIVY_GLINER_MODEL` — GLiNER model name/path (default: `urchade/gliner_medium-v2.1`)
-
-## GLiNER Integration
-
-- Default detector, no flags needed
-- Model auto-downloads to `models/` inside the repo on first run, loads locally after that
-- Entity type mapping: PERSON→"person", COMPANY→"organization", ADDRESS→"location", EMAIL→"email", PHONE→"phone number"
-- Label aliases normalize GLiNER output back to privy types (e.g., "organization"→COMPANY)
 
 ## Key Design Decisions
 
-- **Strategy pattern** for detectors — easy to add new backends by subclassing `BaseDetector`
-- **GLiNER as default** — local, zero-shot, no setup needed beyond `pip install`
-- **Plain JSON mappings** — simple, readable, no encryption overhead
-- **Run-level replacement** in docx_engine preserves bold/italic/color formatting
-- **All entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE
-- **Deduplication** via reverse_index: same (label, original) pair → same placeholder across entire document
-- **Overlap resolution** in `_select_entities`: higher confidence and longer spans win
-- **Local model cache** in `models/` directory (gitignored) — no repeated downloads
+- **Hybrid detection** — GLiNER for semantic entities (names, orgs, addresses), regex for structured patterns (emails, phones, doc IDs)
+- **Hyperlink-aware** — `_all_runs()` walks paragraph XML to include text inside `<w:hyperlink>` elements
+- **Plain JSON mappings** — simple, readable, no encryption
+- **Run-level replacement** preserves bold/italic/color formatting
+- **All entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID
+- **Deduplication** — same (label, original) pair → same placeholder across entire document
+- **Overlap resolution** — higher confidence and longer spans win
+- **Local model cache** in `models/` directory (gitignored) — downloads once, loads locally after

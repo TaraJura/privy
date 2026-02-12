@@ -46,7 +46,7 @@ def anonymize_command(
         help="GLiNER model name or path. Defaults to urchade/gliner_medium-v2.1.",
     ),
     entity_type: list[str] = typer.Option(
-        ["PERSON", "COMPANY", "ADDRESS", "EMAIL", "PHONE"],
+        ["PERSON", "COMPANY", "ADDRESS", "EMAIL", "PHONE", "DOC_ID", "NATIONAL_ID"],
         "--entity-type",
         "-e",
         help="Entity types to replace. Defaults to all. Repeat option to narrow.",

@@ -29,6 +29,14 @@ LABEL_ALIASES = {
     "PHONE NUMBER": "PHONE",
     "TEL": "PHONE",
     "MOBILE": "PHONE",
+    "DOC_ID": "DOC_ID",
+    "DOCUMENT ID": "DOC_ID",
+    "DOCUMENT_ID": "DOC_ID",
+    "REFERENCE": "DOC_ID",
+    "REF": "DOC_ID",
+    "NATIONAL_ID": "NATIONAL_ID",
+    "NATIONAL ID": "NATIONAL_ID",
+    "ID NUMBER": "NATIONAL_ID",
 }
 
 # Mapping from privy entity types to GLiNER-friendly labels.
@@ -36,8 +44,6 @@ GLINER_LABEL_MAP: dict[str, str] = {
     "PERSON": "person",
     "COMPANY": "organization",
     "ADDRESS": "location",
-    "EMAIL": "email",
-    "PHONE": "phone number",
 }
 
 
@@ -119,7 +125,7 @@ class HeuristicDetector(BaseDetector):
         r"\b\d{1,5}\s+[A-Z][A-Za-z0-9.'-]*(?:\s+[A-Z][A-Za-z0-9.'-]*){0,5}\s(?:Street|St|Road|Rd|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Court|Ct)\b"
     )
     email_pattern: re.Pattern[str] = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-    phone_pattern: re.Pattern[str] = re.compile(r"\b(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}\b")
+    phone_pattern: re.Pattern[str] = re.compile(r"(?<!\w)\+?\d{1,3}[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}(?!\w)")
 
     def detect(self, text: str) -> list[EntitySpan]:
         entities: list[EntitySpan] = []
@@ -171,7 +177,9 @@ class GlinerDetector(BaseDetector):
                 typer_echo(f"Model saved to {local_dir}")
 
     _email_re = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-    _phone_re = re.compile(r"\b(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}\b")
+    _phone_re = re.compile(r"(?<!\w)\+?\d{1,3}[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}(?!\w)")
+    _doc_id_re = re.compile(r"\b[A-Z]{2,}[-/]\d{3,}(?:[-/][A-Z0-9]+)*\b")
+    _national_id_re = re.compile(r"\b\d{6}[/-]\d{3,4}\b")
 
     def detect(self, text: str) -> list[EntitySpan]:
         if not text.strip():
@@ -180,10 +188,12 @@ class GlinerDetector(BaseDetector):
         gliner_labels = list(GLINER_LABEL_MAP.values())
         raw_entities = self._model.predict_entities(text, gliner_labels, threshold=self.threshold)
 
+        # Use GLiNER for PERSON, COMPANY, ADDRESS only — regex handles the rest.
+        _regex_handled = {"PHONE", "EMAIL", "DOC_ID"}
         entities: list[EntitySpan] = []
         for item in raw_entities:
             label = _normalize_label(item.get("label", ""))
-            if label is None:
+            if label is None or label in _regex_handled:
                 continue
             start = int(item["start"])
             end = int(item["end"])
@@ -197,9 +207,11 @@ class GlinerDetector(BaseDetector):
                 confidence=float(item.get("score", 1.0)),
             ))
 
-        # GLiNER is weak on structured patterns — supplement with regex for email/phone.
+        # Structured patterns — regex is more reliable than GLiNER for these.
         entities.extend(_from_pattern(self._email_re, text, "EMAIL", 0.95))
         entities.extend(_from_pattern(self._phone_re, text, "PHONE", 0.90))
+        entities.extend(_from_pattern(self._doc_id_re, text, "DOC_ID", 0.95))
+        entities.extend(_from_pattern(self._national_id_re, text, "NATIONAL_ID", 0.95))
 
         return sorted(entities, key=lambda e: (e.start, e.end))
 
