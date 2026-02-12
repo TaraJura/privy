@@ -4,8 +4,10 @@ import json
 import re
 import shlex
 import subprocess
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .types import EntitySpan, VALID_ENTITY_TYPES
@@ -24,8 +26,18 @@ LABEL_ALIASES = {
     "EMAIL": "EMAIL",
     "MAIL": "EMAIL",
     "PHONE": "PHONE",
+    "PHONE NUMBER": "PHONE",
     "TEL": "PHONE",
     "MOBILE": "PHONE",
+}
+
+# Mapping from privy entity types to GLiNER-friendly labels.
+GLINER_LABEL_MAP: dict[str, str] = {
+    "PERSON": "person",
+    "COMPANY": "organization",
+    "ADDRESS": "location",
+    "EMAIL": "email",
+    "PHONE": "phone number",
 }
 
 
@@ -119,11 +131,81 @@ class HeuristicDetector(BaseDetector):
         return sorted(entities, key=lambda e: (e.start, e.end))
 
 
+_DEFAULT_MODELS_DIR = Path(__file__).resolve().parent.parent.parent / "models"
+
+
+class GlinerDetector(BaseDetector):
+    def __init__(
+        self,
+        model_name: str = "urchade/gliner_medium-v2.1",
+        threshold: float = 0.5,
+        models_dir: Path | None = None,
+    ) -> None:
+        self.model_name = model_name
+        self.threshold = threshold
+        try:
+            from gliner import GLiNER
+        except ModuleNotFoundError as exc:
+            raise DetectorError(
+                "Missing dependency 'gliner'. Install it with: pip install gliner"
+            ) from exc
+
+        local_dir = (models_dir or _DEFAULT_MODELS_DIR) / model_name.replace("/", "--")
+        if (local_dir / "gliner_config.json").exists():
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self._model = GLiNER.from_pretrained(str(local_dir))
+        else:
+            local_dir.mkdir(parents=True, exist_ok=True)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self._model = GLiNER.from_pretrained(model_name)
+                self._model.save_pretrained(str(local_dir))
+            typer_echo = None
+            try:
+                import typer
+                typer_echo = typer.echo
+            except ImportError:
+                pass
+            if typer_echo:
+                typer_echo(f"Model saved to {local_dir}")
+
+    def detect(self, text: str) -> list[EntitySpan]:
+        if not text.strip():
+            return []
+
+        gliner_labels = list(GLINER_LABEL_MAP.values())
+        raw_entities = self._model.predict_entities(text, gliner_labels, threshold=self.threshold)
+
+        entities: list[EntitySpan] = []
+        for item in raw_entities:
+            label = _normalize_label(item.get("label", ""))
+            if label is None:
+                continue
+            start = int(item["start"])
+            end = int(item["end"])
+            if start < 0 or end <= start or end > len(text):
+                continue
+            entities.append(EntitySpan(
+                start=start,
+                end=end,
+                label=label,
+                text=item.get("text", text[start:end]),
+                confidence=float(item.get("score", 1.0)),
+            ))
+
+        return sorted(entities, key=lambda e: (e.start, e.end))
+
+
 def available_detectors() -> list[str]:
-    return ["command", "heuristic"]
+    return ["gliner", "command", "heuristic"]
 
 
-def build_detector(detector: str, model_cmd: str | None) -> BaseDetector:
+def build_detector(
+    detector: str,
+    model_cmd: str | None,
+    gliner_model: str | None = None,
+) -> BaseDetector:
     detector_name = detector.strip().lower()
     if detector_name == "heuristic":
         return HeuristicDetector()
@@ -131,11 +213,18 @@ def build_detector(detector: str, model_cmd: str | None) -> BaseDetector:
         if not model_cmd:
             raise DetectorError("--model-cmd is required when detector is 'command'.")
         return CommandDetector(command=model_cmd)
+    if detector_name == "gliner":
+        return GlinerDetector(model_name=gliner_model or "urchade/gliner_medium-v2.1")
     raise DetectorError(f"Unsupported detector type: {detector}")
 
 
 def validate_command_detector(model_cmd: str) -> None:
     detector = CommandDetector(command=model_cmd)
+    detector.detect("Jane Doe works at Acme LLC.")
+
+
+def validate_gliner_detector(gliner_model: str | None = None) -> None:
+    detector = GlinerDetector(model_name=gliner_model or "urchade/gliner_medium-v2.1")
     detector.detect("Jane Doe works at Acme LLC.")
 
 
