@@ -73,9 +73,10 @@ The default `GlinerDetector` uses a hybrid approach:
 | EMAIL | Regex | Structured pattern, GLiNER unreliable |
 | PHONE | Regex | Structured pattern, GLiNER misclassifies (e.g. addresses as phones) |
 | DOC_ID | Regex | Alphanumeric codes like SEC-9920-X |
+| NATIONAL_ID | Regex | National ID numbers like Czech rodné číslo (880512/0012) |
 
 GLiNER labels: `PERSON→"person"`, `COMPANY→"organization"`, `ADDRESS→"location"`.
-GLiNER results for PHONE/EMAIL/DOC_ID are ignored — regex handles those.
+GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles those.
 
 ## Code Conventions
 
@@ -101,7 +102,7 @@ GLiNER results for PHONE/EMAIL/DOC_ID are ignored — regex handles those.
 - **Hyperlink-aware** — `_all_runs()` walks paragraph XML to include text inside `<w:hyperlink>` elements
 - **Plain JSON mappings** — simple, readable, no encryption
 - **Run-level replacement** preserves bold/italic/color formatting
-- **All entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID
+- **All entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID, NATIONAL_ID
 - **Deduplication** — same (label, original) pair → same placeholder across entire document
 - **Overlap resolution** — higher confidence and longer spans win
 - **Local model cache** in `models/` directory (gitignored) — downloads once, loads locally after
