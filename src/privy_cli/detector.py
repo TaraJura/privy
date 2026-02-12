@@ -189,7 +189,7 @@ class GlinerDetector(BaseDetector):
         raw_entities = self._model.predict_entities(text, gliner_labels, threshold=self.threshold)
 
         # Use GLiNER for PERSON, COMPANY, ADDRESS only — regex handles the rest.
-        _regex_handled = {"PHONE", "EMAIL", "DOC_ID"}
+        _regex_handled = {"PHONE", "EMAIL", "DOC_ID", "NATIONAL_ID"}
         entities: list[EntitySpan] = []
         for item in raw_entities:
             label = _normalize_label(item.get("label", ""))

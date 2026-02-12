@@ -4,7 +4,7 @@
 
 **privy-cli** is a local CLI utility for reversible `.docx` anonymization using GLiNER (local zero-shot NER model) + regex patterns. It detects sensitive entities in Word documents, replaces them with numbered placeholders, and stores a JSON mapping file to allow later restoration.
 
-Key properties: fully local (no API calls), GLiNER + regex hybrid detection, run-level formatting preservation, plain JSON mapping files, hyperlink-aware.
+Key properties: fully local (no API calls), GLiNER + regex hybrid detection, run-level formatting preservation, hyperlink-aware, plain JSON mapping files.
 
 ## Quick Reference
 
@@ -39,12 +39,12 @@ src/privy_cli/
 └── mapping_store.py     # MappingData, write_mapping(), read_mapping() — plain JSON
 
 tests/
-├── test_mapping_store.py      # Mapping roundtrip + missing file
+├── test_mapping_store.py      # Mapping roundtrip + missing file error
 └── test_docx_roundtrip.py     # Full anonymize→deanonymize with formatting checks
 
 models/                        # GLiNER model cache (auto-downloaded on first run, gitignored)
 examples/
-└── model_adapter_example.py   # Template for external command detector adapter
+└── model_adapter_example.py   # Template for external command detector adapter (stdin/stdout JSON)
 ```
 
 ## Architecture
@@ -71,11 +71,11 @@ The default `GlinerDetector` uses a hybrid approach:
 | COMPANY | GLiNER model | Best at organization names |
 | ADDRESS | GLiNER model | Best at location/address text |
 | EMAIL | Regex | Structured pattern, GLiNER unreliable |
-| PHONE | Regex | Structured pattern, GLiNER misclassifies (e.g. addresses as phones) |
-| DOC_ID | Regex | Alphanumeric codes like SEC-9920-X |
-| NATIONAL_ID | Regex | National ID numbers like Czech rodné číslo (880512/0012) |
+| PHONE | Regex | Structured pattern, GLiNER misclassifies |
+| DOC_ID | Regex | Alphanumeric codes (e.g. SEC-9920-X) |
+| NATIONAL_ID | Regex | National ID numbers (e.g. Czech rodné číslo 880512/0012) |
 
-GLiNER labels: `PERSON→"person"`, `COMPANY→"organization"`, `ADDRESS→"location"`.
+GLiNER labels sent to model: `"person"`, `"organization"`, `"location"`.
 GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles those.
 
 ## Code Conventions
@@ -87,7 +87,7 @@ GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles 
 - Private helpers prefixed with `_` (e.g., `_normalize_label`, `_all_runs`)
 - Constants as `UPPER_SNAKE_CASE` (`VALID_ENTITY_TYPES`, `GLINER_LABEL_MAP`)
 - Custom exceptions inherit from `RuntimeError`: `DetectorError`, `AnonymizationError`, `MappingStoreError`
-- Relative imports within the package (`from .types import EntitySpan`)
+- Relative imports within the package (`from .types import SpanReplacement`)
 
 ## Dependencies
 
@@ -96,13 +96,25 @@ GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles 
 - **gliner** >= 0.2.5 — Local zero-shot NER model
 - **pytest** >= 8.0.0 — testing (dev dependency)
 
+## Build System
+
+- **setuptools** >= 68 with `src` layout (`package-dir = {"" = "src"}`)
+- Entry point: `privy = "privy_cli.cli:app"`
+- pytest configured with `pythonpath = ["src"]`
+
+## Environment Variables
+
+- `PRIVY_GLINER_MODEL` — GLiNER model name/path (default: `urchade/gliner_medium-v2.1`)
+- `PRIVY_MODEL_CMD` — model command for the `command` detector backend
+
 ## Key Design Decisions
 
-- **Hybrid detection** — GLiNER for semantic entities (names, orgs, addresses), regex for structured patterns (emails, phones, doc IDs)
+- **Hybrid detection** — GLiNER for semantic entities (names, orgs, addresses), regex for structured patterns (emails, phones, IDs)
 - **Hyperlink-aware** — `_all_runs()` walks paragraph XML to include text inside `<w:hyperlink>` elements
 - **Plain JSON mappings** — simple, readable, no encryption
 - **Run-level replacement** preserves bold/italic/color formatting
-- **All entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID, NATIONAL_ID
+- **All 7 entity types on by default** — PERSON, COMPANY, ADDRESS, EMAIL, PHONE, DOC_ID, NATIONAL_ID
 - **Deduplication** — same (label, original) pair → same placeholder across entire document
-- **Overlap resolution** — higher confidence and longer spans win
-- **Local model cache** in `models/` directory (gitignored) — downloads once, loads locally after
+- **Overlap resolution** — higher confidence and longer spans win, processed in `_select_entities()`
+- **Local model cache** in `models/` directory (gitignored) — downloads once on first run, loads locally after
+- **Model stored in repo** at `models/urchade--gliner_medium-v2.1/`, not in `~/.cache/huggingface`

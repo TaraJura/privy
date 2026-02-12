@@ -1,13 +1,14 @@
 # privy-cli
 
-Local CLI utility for reversible `.docx` anonymization and deanonymization using local model inference.
+Local CLI utility for reversible `.docx` anonymization using GLiNER (zero-shot NER) + regex patterns.
 
 ## Features
 
-- Anonymize `.docx` files while preserving run-level formatting.
-- Deanonymize from encrypted mapping file.
-- Local model integration through a command adapter (JSON in/out).
-- No external API calls required.
+- Anonymize `.docx` files while preserving run-level formatting (bold, italic, etc.).
+- Hybrid detection: GLiNER model for names/companies/addresses, regex for emails/phones/IDs.
+- Deanonymize from plain JSON mapping file.
+- Handles text inside hyperlinks, tables, headers, and footers.
+- Fully local — no external API calls.
 
 ## Install
 
@@ -15,64 +16,39 @@ Local CLI utility for reversible `.docx` anonymization and deanonymization using
 pip install -e .
 ```
 
-## CLI usage
+## Usage
 
-Anonymize using local model command:
+Anonymize (all entity types detected by default):
 
 ```bash
-privy anonymize input.docx \
-  --output anonymized.docx \
-  --map anonymized.map.enc.json \
-  --detector command \
-  --model-cmd "python /absolute/path/to/your_model_adapter.py" \
-  --entity-type PERSON --entity-type COMPANY --entity-type ADDRESS
+privy anonymize input.docx -o out/anonymized.docx
 ```
 
 Deanonymize:
 
 ```bash
-privy deanonymize anonymized.docx \
-  --output restored.docx \
-  --map anonymized.map.enc.json
+privy deanonymize out/anonymized.docx -o out/restored.docx --map out/anonymized.docx.map.json
 ```
 
-Validate model command:
+List available detectors:
 
 ```bash
-privy models validate --detector command --model-cmd "python /absolute/path/to/your_model_adapter.py"
+privy models list
 ```
 
-## Local model adapter contract
+## Entity types
 
-`privy-cli` calls your model command with JSON input via `stdin`:
+All detected by default: `PERSON`, `COMPANY`, `ADDRESS`, `EMAIL`, `PHONE`, `DOC_ID`, `NATIONAL_ID`.
 
-```json
-{"text":"Jane Doe works at Acme LLC on 123 Main Street."}
+Narrow with `-e`:
+
+```bash
+privy anonymize input.docx -o out.docx -e PERSON -e EMAIL
 ```
-
-Your command must return JSON via `stdout`:
-
-```json
-{
-  "entities": [
-    {"start": 0, "end": 8, "label": "PERSON", "confidence": 0.99},
-    {"start": 18, "end": 26, "label": "COMPANY", "confidence": 0.96},
-    {"start": 30, "end": 45, "label": "ADDRESS", "confidence": 0.94}
-  ]
-}
-```
-
-Supported labels: `PERSON`, `COMPANY`, `ADDRESS`, `EMAIL`, `PHONE`.
-Aliases like `PER`, `ORG`, `LOC` are normalized.
-
-## Security notes
-
-- The deanonymization mapping is encrypted using PBKDF2 + Fernet.
-- Keep the mapping file and password secure; both are required for restoration.
 
 ## Dev
 
 ```bash
+pip install -e ".[dev]"
 pytest
 ```
-# privy

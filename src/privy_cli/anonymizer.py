@@ -10,7 +10,7 @@ from docx import Document
 from .detector import BaseDetector
 from .docx_engine import apply_replacements_to_paragraph, iter_document_paragraphs, paragraph_text
 from .mapping_store import MappingData, read_mapping, write_mapping
-from .types import EntitySpan, SpanReplacement, VALID_ENTITY_TYPES
+from .types import SpanReplacement, VALID_ENTITY_TYPES
 
 
 class AnonymizationError(RuntimeError):
