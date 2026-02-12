@@ -7,7 +7,6 @@ from docx.document import Document as DocxDocument
 from docx.table import _Cell, Table
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
-from lxml import etree
 
 from .types import SpanReplacement
 
