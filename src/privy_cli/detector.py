@@ -170,6 +170,9 @@ class GlinerDetector(BaseDetector):
             if typer_echo:
                 typer_echo(f"Model saved to {local_dir}")
 
+    _email_re = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+    _phone_re = re.compile(r"\b(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}\b")
+
     def detect(self, text: str) -> list[EntitySpan]:
         if not text.strip():
             return []
@@ -193,6 +196,10 @@ class GlinerDetector(BaseDetector):
                 text=item.get("text", text[start:end]),
                 confidence=float(item.get("score", 1.0)),
             ))
+
+        # GLiNER is weak on structured patterns — supplement with regex for email/phone.
+        entities.extend(_from_pattern(self._email_re, text, "EMAIL", 0.95))
+        entities.extend(_from_pattern(self._phone_re, text, "PHONE", 0.90))
 
         return sorted(entities, key=lambda e: (e.start, e.end))
 

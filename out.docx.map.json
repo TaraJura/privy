@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "created_at": "2026-02-12T14:48:10.845435+00:00",
+  "placeholders": {
+    "COMPANY_001": {
+      "label": "COMPANY",
+      "original": "PROJECT DELTA"
+    },
+    "COMPANY_002": {
+      "label": "COMPANY",
+      "original": "THE CONSULTANT"
+    },
+    "PERSON_001": {
+      "label": "PERSON",
+      "original": "Jiří Novák"
+    },
+    "ADDRESS_001": {
+      "label": "ADDRESS",
+      "original": "Václavské náměstí 1"
+    },
+    "ADDRESS_002": {
+      "label": "ADDRESS",
+      "original": "Praha 1"
+    },
+    "ADDRESS_003": {
+      "label": "ADDRESS",
+      "original": "Czech Republic"
+    },
+    "PHONE_001": {
+      "label": "PHONE",
+      "original": "+420 777 123 456"
+    },
+    "PERSON_002": {
+      "label": "PERSON",
+      "original": "THE CLIENT"
+    },
+    "COMPANY_003": {
+      "label": "COMPANY",
+      "original": "Acme Global Solutions S.R.O."
+    },
+    "PERSON_003": {
+      "label": "PERSON",
+      "original": "Alice Vondráčková"
+    },
+    "ADDRESS_004": {
+      "label": "ADDRESS",
+      "original": "Budějovická 12"
+    },
+    "ADDRESS_005": {
+      "label": "ADDRESS",
+      "original": "Prague 4"
+    },
+    "PERSON_004": {
+      "label": "PERSON",
+      "original": "The following personnel"
+    },
+    "COMPANY_004": {
+      "label": "COMPANY",
+      "original": "Accounting Department"
+    },
+    "PERSON_005": {
+      "label": "PERSON",
+      "original": "consultant"
+    },
+    "ADDRESS_006": {
+      "label": "ADDRESS",
+      "original": "Mánesova 15"
+    },
+    "ADDRESS_007": {
+      "label": "ADDRESS",
+      "original": "Prague 2"
+    },
+    "COMPANY_005": {
+      "label": "COMPANY",
+      "original": "Security Response Team"
+    },
+    "PERSON_006": {
+      "label": "PERSON",
+      "original": "Martin Svoboda"
+    },
+    "PHONE_002": {
+      "label": "PHONE",
+      "original": "+420 608 999 888"
+    },
+    "PERSON_007": {
+      "label": "PERSON",
+      "original": "Hana Malá"
+    },
+    "PHONE_003": {
+      "label": "PHONE",
+      "original": "Budějovická 12"
+    },
+    "PERSON_008": {
+      "label": "PERSON",
+      "original": "PERSON_1"
+    },
+    "EMAIL_001": {
+      "label": "EMAIL",
+      "original": "ADDRESS_1"
+    },
+    "PERSON_009": {
+      "label": "PERSON",
+      "original": "Project Lead"
+    },
+    "PERSON_010": {
+      "label": "PERSON",
+      "original": "Jana Dvořáková"
+    },
+    "PERSON_011": {
+      "label": "PERSON",
+      "original": "Petr Kučera"
+    }
+  }
+}
