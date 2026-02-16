@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/privy_cli/__init__.py
+src/privy_cli/__main__.py
 src/privy_cli/anonymizer.py
 src/privy_cli/cli.py
 src/privy_cli/detector.py
