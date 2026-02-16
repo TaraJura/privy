@@ -1,0 +1,3 @@
+privy anonymize example_data.docx -o out.docx
+
+privy deanonymize out.docx -o restored.docx --map out.docx.map.json
