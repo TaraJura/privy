@@ -10,10 +10,36 @@ Local CLI utility for reversible `.docx` anonymization using GLiNER (zero-shot N
 - Handles text inside hyperlinks, tables, headers, and footers.
 - Fully local — no external API calls.
 
-## Install
+## Install (macOS)
+
+1. Go to [Releases](https://github.com/TaraJura/privy/releases/latest) and download **`privy-0.1.0-arm64.pkg`** (Apple Silicon).
+2. Double-click the `.pkg` file and follow the installer.
+3. Open **Terminal** (search "Terminal" in Spotlight) and verify it works:
 
 ```bash
-pip install -e .
+privy --help
+```
+
+That's it — no Python, no pip, no setup required.
+
+> **First run note:** The first time you anonymize a document, privy downloads the GLiNER language model (~750 MB). This is a one-time download and takes a few minutes depending on your connection.
+
+## Quick start
+
+**Anonymize a document:**
+
+```bash
+privy anonymize contract.docx -o anonymized.docx
+```
+
+This produces two files:
+- `anonymized.docx` — your document with sensitive data replaced by placeholders like `PERSON_001`, `COMPANY_001`, etc.
+- `anonymized.docx.map.json` — the mapping file needed to restore the original text.
+
+**Restore the original:**
+
+```bash
+privy deanonymize anonymized.docx -o restored.docx --map anonymized.docx.map.json
 ```
 
 ## Usage
