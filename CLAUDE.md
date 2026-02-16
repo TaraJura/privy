@@ -35,6 +35,7 @@ privy models validate
 ```
 src/privy_cli/
 ├── __init__.py          # Package version (__version__ = "0.1.0")
+├── __main__.py          # Entry point for PyInstaller and python -m privy_cli
 ├── types.py             # EntitySpan, SpanReplacement dataclasses; VALID_ENTITY_TYPES
 ├── cli.py               # Typer CLI — commands: anonymize, deanonymize, models list/validate
 ├── detector.py          # BaseDetector (ABC), GlinerDetector (default), CommandDetector, HeuristicDetector
@@ -49,6 +50,20 @@ tests/
 models/                        # GLiNER model cache (auto-downloaded on first run, gitignored)
 examples/
 └── model_adapter_example.py   # Template for external command detector adapter (stdin/stdout JSON)
+
+# Packaging & build
+privy.spec                     # PyInstaller build specification (onedir mode)
+entitlements.plist             # macOS hardened runtime entitlements for PyTorch JIT
+scripts/
+└── build_macos.sh             # Full macOS build pipeline (pyinstaller → sign → pkg → notarize)
+packaging/
+├── distribution.xml           # macOS .pkg distribution definition
+├── resources/welcome.html     # Installer welcome screen
+└── scripts/
+    ├── postinstall            # Creates /usr/local/bin/privy symlink
+    └── preinstall             # Cleans previous install on upgrade
+.github/workflows/
+└── build-macos.yml            # CI/CD: builds arm64 + x86_64 .pkg on version tags
 ```
 
 ## Architecture
@@ -106,6 +121,29 @@ GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles 
 - Entry point: `privy = "privy_cli.cli:app"`
 - pytest configured with `pythonpath = ["src"]`
 
+## macOS Packaging & Distribution
+
+Distributed as a standalone macOS `.pkg` installer via GitHub Releases. Users download and double-click to install.
+
+```bash
+# Local build (unsigned)
+./scripts/build_macos.sh
+
+# Signed + notarized build (requires Apple Developer ID)
+CODESIGN_IDENTITY="Developer ID Application: ..." \
+INSTALLER_IDENTITY="Developer ID Installer: ..." \
+APPLE_ID="..." TEAM_ID="..." APP_SPECIFIC_PASSWORD="..." \
+  ./scripts/build_macos.sh
+```
+
+**Pipeline:** PyInstaller (onedir) → sign binaries → pkgbuild/productbuild → sign .pkg → notarize → staple
+
+**GitHub Actions:** Push a `v*` tag to trigger automatic builds for arm64 + x86_64 and upload `.pkg` files to a GitHub Release.
+
+**Install location:** `/usr/local/lib/privy/` with symlink at `/usr/local/bin/privy`
+
+**Model cache (frozen app):** `~/Library/Application Support/privy-cli/models/` (detected via `sys.frozen`)
+
 ## Environment Variables
 
 - `PRIVY_GLINER_MODEL` — GLiNER model name/path (default: `urchade/gliner_medium-v2.1`)
@@ -123,3 +161,5 @@ GLiNER results for PHONE/EMAIL/DOC_ID/NATIONAL_ID are ignored — regex handles 
 - **Overlap resolution** — higher confidence and longer spans win, processed in `_select_entities()`
 - **Local model cache** in `models/` directory (gitignored) — downloads once on first run, loads locally after
 - **Model stored in repo** at `models/urchade--gliner_medium-v2.1/`, not in `~/.cache/huggingface`
+- **Frozen app model path** — `_get_default_models_dir()` in `detector.py` uses `~/Library/Application Support/privy-cli/models/` when `sys.frozen` is set (PyInstaller), otherwise project-level `models/`
+- **macOS packaging** — PyInstaller onedir + `.pkg` installer, signed/notarized for Gatekeeper

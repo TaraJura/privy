@@ -1,0 +1,5 @@
+#!/bin/bash
+# postinstall — create symlink so 'privy' is on PATH
+set -e
+ln -sf /usr/local/lib/privy/privy /usr/local/bin/privy
+exit 0

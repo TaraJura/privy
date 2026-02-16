@@ -4,6 +4,7 @@ import json
 import re
 import shlex
 import subprocess
+import sys
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -49,6 +50,15 @@ GLINER_LABEL_MAP: dict[str, str] = {
 
 class DetectorError(RuntimeError):
     pass
+
+
+def _echo(message: str) -> None:
+    """Print a message via typer if available, otherwise via print."""
+    try:
+        import typer
+        typer.echo(message)
+    except ImportError:
+        print(message)  # noqa: T201
 
 
 class BaseDetector(ABC):
@@ -137,7 +147,16 @@ class HeuristicDetector(BaseDetector):
         return sorted(entities, key=lambda e: (e.start, e.end))
 
 
-_DEFAULT_MODELS_DIR = Path(__file__).resolve().parent.parent.parent / "models"
+def _get_default_models_dir() -> Path:
+    """Return the default directory for GLiNER model cache.
+
+    When running as a frozen (PyInstaller) app, use the macOS-standard
+    Application Support directory.  When running from source, use the
+    project-level ``models/`` directory.
+    """
+    if getattr(sys, "frozen", False):
+        return Path.home() / "Library" / "Application Support" / "privy-cli" / "models"
+    return Path(__file__).resolve().parent.parent.parent / "models"
 
 
 class GlinerDetector(BaseDetector):
@@ -156,25 +175,29 @@ class GlinerDetector(BaseDetector):
                 "Missing dependency 'gliner'. Install it with: pip install gliner"
             ) from exc
 
-        local_dir = (models_dir or _DEFAULT_MODELS_DIR) / model_name.replace("/", "--")
+        local_dir = (models_dir or _get_default_models_dir()) / model_name.replace("/", "--")
         if (local_dir / "gliner_config.json").exists():
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 self._model = GLiNER.from_pretrained(str(local_dir))
         else:
-            local_dir.mkdir(parents=True, exist_ok=True)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                self._model = GLiNER.from_pretrained(model_name)
-                self._model.save_pretrained(str(local_dir))
-            typer_echo = None
+            _echo(
+                f"Downloading GLiNER model ({model_name})...\n"
+                "This is a one-time download (~750 MB) and may take a few minutes."
+            )
             try:
-                import typer
-                typer_echo = typer.echo
-            except ImportError:
-                pass
-            if typer_echo:
-                typer_echo(f"Model saved to {local_dir}")
+                local_dir.mkdir(parents=True, exist_ok=True)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self._model = GLiNER.from_pretrained(model_name)
+                    self._model.save_pretrained(str(local_dir))
+            except (OSError, ConnectionError) as exc:
+                raise DetectorError(
+                    f"Failed to download GLiNER model: {exc}\n"
+                    "Check your internet connection and try again, or use "
+                    "--detector heuristic for pattern-based detection (no download required)."
+                ) from exc
+            _echo(f"Model saved to {local_dir}")
 
     _email_re = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
     _phone_re = re.compile(r"(?<!\w)\+?\d{1,3}[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}(?!\w)")

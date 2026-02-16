@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>privy-cli</title>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.privy-cli.pkg"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.privy-cli.pkg" visible="false">
+        <pkg-ref id="com.privy-cli.pkg"/>
+    </choice>
+    <pkg-ref id="com.privy-cli.pkg" version="0.0.0" onConclusion="none">privy-component.pkg</pkg-ref>
+</installer-gui-script>

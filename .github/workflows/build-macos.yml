@@ -1,0 +1,84 @@
+name: Build macOS installer
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e "."
+          pip install "pyinstaller>=6.0"
+
+      - name: Build with PyInstaller
+        run: pyinstaller privy.spec --clean --noconfirm
+
+      - name: Fix python-docx template paths
+        run: mkdir -p dist/privy/_internal/docx/parts
+
+      - name: Smoke test
+        run: ./dist/privy/privy --help
+
+      - name: Build .pkg
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCH="${{ matrix.arch }}"
+
+          pkgbuild \
+            --root dist/privy \
+            --identifier com.privy-cli.pkg \
+            --version "$VERSION" \
+            --install-location /usr/local/lib/privy \
+            --scripts packaging/scripts \
+            dist/privy-component.pkg
+
+          productbuild \
+            --distribution packaging/distribution.xml \
+            --package-path dist \
+            --resources packaging/resources \
+            "dist/privy-${VERSION}-${ARCH}.pkg"
+
+          rm -f dist/privy-component.pkg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: privy-${{ matrix.arch }}.pkg
+          path: dist/*.pkg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.pkg
+          generate_release_notes: true

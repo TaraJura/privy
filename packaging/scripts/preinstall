@@ -1,0 +1,10 @@
+#!/bin/bash
+# preinstall — clean up previous installation if upgrading
+set -e
+if [ -d /usr/local/lib/privy ]; then
+    rm -rf /usr/local/lib/privy
+fi
+if [ -L /usr/local/bin/privy ]; then
+    rm -f /usr/local/bin/privy
+fi
+exit 0
