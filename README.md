@@ -13,8 +13,12 @@ Local CLI utility for reversible `.docx` anonymization using GLiNER (zero-shot N
 ## Install (macOS)
 
 1. Go to [Releases](https://github.com/TaraJura/privy/releases/latest) and download **`privy-0.1.0-arm64.pkg`** (Apple Silicon).
-2. Double-click the `.pkg` file and follow the installer.
-3. Open **Terminal** (search "Terminal" in Spotlight) and verify it works:
+2. Before opening, remove the macOS quarantine flag — open **Terminal** and run:
+   ```bash
+   xattr -d com.apple.quarantine ~/Downloads/privy-0.1.0-arm64.pkg
+   ```
+3. Double-click the `.pkg` file and follow the installer.
+4. Verify it works:
 
 ```bash
 privy --help
