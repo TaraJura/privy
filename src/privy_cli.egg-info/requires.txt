@@ -4,3 +4,6 @@ gliner>=0.2.5
 
 [dev]
 pytest>=8.0.0
+
+[gui]
+pywebview>=5.0

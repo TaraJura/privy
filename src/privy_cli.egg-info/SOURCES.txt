@@ -6,6 +6,8 @@ src/privy_cli/anonymizer.py
 src/privy_cli/cli.py
 src/privy_cli/detector.py
 src/privy_cli/docx_engine.py
+src/privy_cli/gui.py
+src/privy_cli/gui_html.py
 src/privy_cli/mapping_store.py
 src/privy_cli/types.py
 src/privy_cli.egg-info/PKG-INFO

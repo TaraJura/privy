@@ -8,9 +8,28 @@ import typer
 from .anonymizer import AnonymizationError, anonymize_docx, deanonymize_docx
 from .detector import DetectorError, available_detectors, build_detector, validate_command_detector, validate_gliner_detector
 
-app = typer.Typer(help="Local AI CLI for reversible DOCX anonymization.")
+app = typer.Typer(
+    help="Local AI CLI for reversible DOCX anonymization.",
+    invoke_without_command=True,
+)
 models_app = typer.Typer(help="Inspect local detector backends.")
 app.add_typer(models_app, name="models")
+
+
+@app.callback()
+def _main(ctx: typer.Context) -> None:
+    """Launch the GUI when no subcommand is given."""
+    if ctx.invoked_subcommand is None:
+        try:
+            from .gui import launch_gui
+        except ImportError:
+            typer.echo(
+                "GUI not available. Install with: pip install privy-cli[gui]\n"
+                "Or use a subcommand: privy anonymize, privy deanonymize",
+                err=True,
+            )
+            raise typer.Exit(1)
+        launch_gui()
 
 
 def _resolve_map_path(map_path: Optional[Path], output_path: Path) -> Path:
@@ -174,6 +193,20 @@ def validate_models(
 
     typer.echo(f"Unsupported detector: {detector}", err=True)
     raise typer.Exit(1)
+
+
+@app.command("gui")
+def gui_command() -> None:
+    """Launch the graphical interface."""
+    try:
+        from .gui import launch_gui
+    except ImportError:
+        typer.echo(
+            "GUI dependencies not installed. Install with: pip install privy-cli[gui]",
+            err=True,
+        )
+        raise typer.Exit(1)
+    launch_gui()
 
 
 if __name__ == "__main__":
