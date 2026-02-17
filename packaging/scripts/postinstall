@@ -1,5 +1,11 @@
 #!/bin/bash
-# postinstall — create symlink so 'privy' is on PATH
+# postinstall — create CLI symlink and install Privy.app
 set -e
 ln -sf /usr/local/lib/privy/privy /usr/local/bin/privy
+
+# Copy the .app wrapper to /Applications so it appears in Spotlight/Launchpad
+if [ -d /usr/local/lib/privy/Privy.app ]; then
+    rm -rf /Applications/Privy.app
+    cp -R /usr/local/lib/privy/Privy.app /Applications/Privy.app
+fi
 exit 0

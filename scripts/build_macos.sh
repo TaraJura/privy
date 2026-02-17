@@ -49,6 +49,47 @@ pyinstaller privy.spec --clean --noconfirm
 echo "==> Patching python-docx template paths..."
 mkdir -p dist/privy/_internal/docx/parts
 
+# ── Step 2c: Create Privy.app wrapper ────────────────────────────────────────
+# Minimal .app bundle that launches the GUI. Installed to /Applications by
+# the postinstall script so users can open privy from Spotlight / Launchpad.
+echo "==> Creating Privy.app wrapper..."
+APP_DIR="dist/privy/Privy.app/Contents"
+mkdir -p "$APP_DIR/MacOS" "$APP_DIR/Resources"
+
+cat > "$APP_DIR/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Privy</string>
+    <key>CFBundleDisplayName</key>
+    <string>Privy</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.tarajura.privy</string>
+    <key>CFBundleVersion</key>
+    <string>VERSION_PLACEHOLDER</string>
+    <key>CFBundleShortVersionString</key>
+    <string>VERSION_PLACEHOLDER</string>
+    <key>CFBundleExecutable</key>
+    <string>privy-launcher</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+</dict>
+</plist>
+PLIST
+sed -i '' "s/VERSION_PLACEHOLDER/${VERSION}/g" "$APP_DIR/Info.plist"
+
+cat > "$APP_DIR/MacOS/privy-launcher" << 'LAUNCHER'
+#!/bin/bash
+exec /usr/local/lib/privy/privy "$@"
+LAUNCHER
+chmod +x "$APP_DIR/MacOS/privy-launcher"
+
 # ── Step 3: Quick smoke test ────────────────────────────────────────────────
 echo "==> Smoke test..."
 ./dist/privy/privy --help > /dev/null

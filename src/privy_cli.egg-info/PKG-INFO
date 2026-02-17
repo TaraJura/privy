@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: privy-cli
-Version: 0.2.0
+Version: 0.2.1
 Summary: Local AI-powered CLI for reversible DOCX anonymization
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown

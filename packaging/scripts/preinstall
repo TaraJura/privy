@@ -7,4 +7,7 @@ fi
 if [ -L /usr/local/bin/privy ]; then
     rm -f /usr/local/bin/privy
 fi
+if [ -d /Applications/Privy.app ]; then
+    rm -rf /Applications/Privy.app
+fi
 exit 0
