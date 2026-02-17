@@ -12,19 +12,18 @@ Local CLI utility for reversible `.docx` anonymization using GLiNER (zero-shot N
 
 ## Install (macOS)
 
-1. Go to [Releases](https://github.com/TaraJura/privy/releases/latest) and download **`privy-0.1.0-arm64.pkg`** (Apple Silicon).
-2. Before opening, remove the macOS quarantine flag — open **Terminal** and run:
-   ```bash
-   xattr -d com.apple.quarantine ~/Downloads/privy-0.1.0-arm64.pkg
-   ```
-3. Double-click the `.pkg` file and follow the installer.
-4. Verify it works:
+```bash
+brew tap TaraJura/privy
+brew install --cask privy
+```
+
+Verify it works:
 
 ```bash
 privy --help
 ```
 
-That's it — no Python, no pip, no setup required.
+No Python, no pip, no manual setup required.
 
 > **First run note:** The first time you anonymize a document, privy downloads the GLiNER language model (~750 MB). This is a one-time download and takes a few minutes depending on your connection.
 
