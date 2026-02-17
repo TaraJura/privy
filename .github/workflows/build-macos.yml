@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e "."
+          pip install -e ".[gui]"
           pip install "pyinstaller>=6.0"
 
       - name: Build with PyInstaller

@@ -35,7 +35,7 @@ fi
 python3 -m venv build-venv
 source build-venv/bin/activate
 pip install --upgrade pip --quiet
-pip install -e "." --quiet
+pip install -e ".[gui]" --quiet
 pip install "pyinstaller>=6.0" --quiet
 
 # ── Step 2: Run PyInstaller ─────────────────────────────────────────────────

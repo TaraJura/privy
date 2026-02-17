@@ -15,7 +15,7 @@ block_cipher = None
 
 # gliner is lazily imported (try/except), so PyInstaller's analysis misses it.
 # collect_all grabs the package's submodules, data files, and binaries.
-_packages_to_collect = ["gliner", "transformers", "torch"]
+_packages_to_collect = ["gliner", "transformers", "torch", "webview"]
 _all_datas = []
 _all_binaries = []
 _all_hiddens = []
@@ -44,6 +44,19 @@ a = Analysis(
         "pyyaml",
         "requests",
         "tqdm",
+        # pywebview + macOS backend
+        "webview",
+        "webview.platforms.cocoa",
+        "objc",
+        "Foundation",
+        "AppKit",
+        "WebKit",
+        "Cocoa",
+        "Quartz",
+        "UniformTypeIdentifiers",
+        "Security",
+        "bottle",
+        "proxy_tools",
     ],
     hookspath=[],
     hooksconfig={},
