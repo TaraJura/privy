@@ -9,17 +9,28 @@ from __future__ import annotations
 
 import os
 
+from PyInstaller.utils.hooks import collect_all, collect_submodules
+
 block_cipher = None
+
+# gliner is lazily imported (try/except), so PyInstaller's analysis misses it.
+# collect_all grabs the package's submodules, data files, and binaries.
+_packages_to_collect = ["gliner", "transformers", "torch"]
+_all_datas = []
+_all_binaries = []
+_all_hiddens = []
+for _pkg in _packages_to_collect:
+    _d, _b, _h = collect_all(_pkg)
+    _all_datas += _d
+    _all_binaries += _b
+    _all_hiddens += _h
 
 a = Analysis(
     ["src/privy_cli/__main__.py"],
     pathex=["src"],
-    binaries=[],
-    datas=[],
-    hiddenimports=[
-        "gliner",
-        "transformers",
-        "torch",
+    binaries=_all_binaries,
+    datas=_all_datas,
+    hiddenimports=_all_hiddens + [
         "numpy",
         "onnxruntime",
         "sentencepiece",
@@ -38,15 +49,10 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        "torch.distributed",
-        "torch.testing",
-        "torch.utils.tensorboard",
         "matplotlib",
         "PIL",
         "IPython",
         "tkinter",
-        "unittest",
-        "test",
     ],
     noarchive=False,
     optimize=0,
