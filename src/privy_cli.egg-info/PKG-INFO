@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: privy-cli
-Version: 0.1.0
+Version: 0.2.0
 Summary: Local AI-powered CLI for reversible DOCX anonymization
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
@@ -12,86 +12,67 @@ Requires-Dist: pywebview>=5.0; extra == "gui"
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0.0; extra == "dev"
 
-# privy-cli
+# privy
 
-Local CLI utility for reversible `.docx` anonymization using GLiNER (zero-shot NER) + regex patterns.
+Local tool for reversible `.docx` anonymization. Drag and drop a Word document, get an anonymized copy with a mapping file to restore the original.
 
 ## Features
 
-- Anonymize `.docx` files while preserving run-level formatting (bold, italic, etc.).
-- Hybrid detection: GLiNER model for names/companies/addresses, regex for emails/phones/IDs.
-- Deanonymize from plain JSON mapping file.
+- Drag-and-drop GUI — no terminal needed.
+- Hybrid AI detection: GLiNER model for names/companies/addresses, regex for emails/phones/IDs.
+- Preserves formatting (bold, italic, colors) during anonymization.
 - Handles text inside hyperlinks, tables, headers, and footers.
-- Fully local — no external API calls.
+- Reversible — restore the original from the mapping file.
+- Fully local — no data leaves your machine.
 
-## Install (macOS)
+## Install
 
 ```bash
 brew tap TaraJura/privy
 brew install --cask privy
 ```
 
-Verify it works:
+## Use
+
+Launch the app:
 
 ```bash
-privy --help
+privy
 ```
 
-No Python, no pip, no manual setup required.
+This opens the GUI. Drag a `.docx` file onto the window and click **Anonymize**.
 
-> **First run note:** The first time you anonymize a document, privy downloads the GLiNER language model (~750 MB). This is a one-time download and takes a few minutes depending on your connection.
+The first run downloads the AI model (~750 MB). This is a one-time download.
 
-## Quick start
+### Output
 
-**Anonymize a document:**
+Anonymizing `contract.docx` produces:
+- `contract_anonymized.docx` — sensitive data replaced with placeholders (`PERSON_001`, `COMPANY_001`, etc.)
+- `contract_anonymized.docx.map.json` — mapping file to restore the original
+
+To restore, drag the anonymized file back and click **Deanonymize** (the mapping file is detected automatically).
+
+## CLI
+
+All features are also available from the command line:
 
 ```bash
+# Anonymize
 privy anonymize contract.docx -o anonymized.docx
-```
 
-This produces two files:
-- `anonymized.docx` — your document with sensitive data replaced by placeholders like `PERSON_001`, `COMPANY_001`, etc.
-- `anonymized.docx.map.json` — the mapping file needed to restore the original text.
-
-**Restore the original:**
-
-```bash
+# Restore
 privy deanonymize anonymized.docx -o restored.docx --map anonymized.docx.map.json
+
+# Narrow to specific entity types
+privy anonymize contract.docx -o out.docx -e PERSON -e EMAIL
 ```
 
-## Usage
-
-Anonymize (all entity types detected by default):
-
-```bash
-privy anonymize input.docx -o out/anonymized.docx
-```
-
-Deanonymize:
-
-```bash
-privy deanonymize out/anonymized.docx -o out/restored.docx --map out/anonymized.docx.map.json
-```
-
-List available detectors:
-
-```bash
-privy models list
-```
-
-## Entity types
-
-All detected by default: `PERSON`, `COMPANY`, `ADDRESS`, `EMAIL`, `PHONE`, `DOC_ID`, `NATIONAL_ID`.
-
-Narrow with `-e`:
-
-```bash
-privy anonymize input.docx -o out.docx -e PERSON -e EMAIL
-```
+Entity types detected: `PERSON`, `COMPANY`, `ADDRESS`, `EMAIL`, `PHONE`, `DOC_ID`, `NATIONAL_ID`.
 
 ## Dev
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[gui,dev]"
 pytest
+privy gui
 ```
