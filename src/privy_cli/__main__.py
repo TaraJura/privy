@@ -6,6 +6,9 @@ import sys
 
 
 def main() -> None:
+    import multiprocessing
+    multiprocessing.freeze_support()
+
     # When launched as a .app bundle (double-click), sys.argv has only the
     # binary path.  Detect this and launch the GUI directly.
     if getattr(sys, "frozen", False) and len(sys.argv) == 1:
