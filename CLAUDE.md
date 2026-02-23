@@ -46,7 +46,7 @@ privy models validate
 
 ```
 src/privy_cli/
-├── __init__.py          # Package version (__version__ = "0.2.2")
+├── __init__.py          # Package version (__version__ = "0.2.3")
 ├── __main__.py          # Entry point — freeze_support(), launches GUI if frozen+no args, else CLI
 ├── types.py             # EntitySpan, SpanReplacement dataclasses; VALID_ENTITY_TYPES set
 ├── cli.py               # Typer CLI — no-arg launches GUI; commands: anonymize, deanonymize, gui, models list/validate
