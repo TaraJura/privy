@@ -155,6 +155,7 @@ class Api:
                     detector="gliner",
                     model_cmd=None,
                     gliner_model=None,
+                    progress_callback=self._update_status,
                 )
             return self._detector
 

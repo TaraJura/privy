@@ -11,6 +11,7 @@ import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 from .types import EntitySpan, VALID_ENTITY_TYPES
@@ -203,6 +204,7 @@ class GlinerDetector(BaseDetector):
         model_name: str = "urchade/gliner_large-v2.1",
         threshold: float = 0.5,
         models_dir: Path | None = None,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> None:
         self.model_name = model_name
         self.threshold = threshold
@@ -213,8 +215,13 @@ class GlinerDetector(BaseDetector):
                 "Missing dependency 'gliner'. Install it with: pip install gliner"
             ) from exc
 
+        def _report(msg: str) -> None:
+            if progress_callback:
+                progress_callback(msg)
+
         local_dir = (models_dir or _get_default_models_dir()) / model_name.replace("/", "--")
         if (local_dir / "gliner_config.json").exists():
+            _report("Loading AI model...")
             spinner = _Spinner("Loading model...")
             spinner.start()
             try:
@@ -224,6 +231,7 @@ class GlinerDetector(BaseDetector):
             finally:
                 spinner.stop("Model loaded")
         else:
+            _report("Downloading AI model (one-time setup, ~1.5 GB)...")
             _echo(
                 f"Downloading GLiNER model ({model_name})\n"
                 "First run — this is a one-time download and may take a few minutes."
@@ -235,18 +243,21 @@ class GlinerDetector(BaseDetector):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     self._model = GLiNER.from_pretrained(model_name)
+                _report("Saving model to local cache...")
                 spinner.update("Saving model to local cache...")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     self._model.save_pretrained(str(local_dir))
             except (OSError, ConnectionError) as exc:
                 spinner.stop()
+                _report("Model download failed. Check your internet connection.")
                 raise DetectorError(
                     f"Failed to download GLiNER model: {exc}\n"
                     "Check your internet connection and try again, or use "
                     "--detector heuristic for pattern-based detection (no download required)."
                 ) from exc
             spinner.stop(f"Model ready — cached at {local_dir}")
+            _report("Model ready")
 
     _email_re = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
     _phone_re = re.compile(r"(?<!\w)\+?\d{1,3}[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}(?!\w)")
@@ -296,6 +307,7 @@ def build_detector(
     detector: str,
     model_cmd: str | None,
     gliner_model: str | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> BaseDetector:
     detector_name = detector.strip().lower()
     if detector_name == "heuristic":
@@ -305,7 +317,10 @@ def build_detector(
             raise DetectorError("--model-cmd is required when detector is 'command'.")
         return CommandDetector(command=model_cmd)
     if detector_name == "gliner":
-        return GlinerDetector(model_name=gliner_model or "urchade/gliner_large-v2.1")
+        return GlinerDetector(
+            model_name=gliner_model or "urchade/gliner_large-v2.1",
+            progress_callback=progress_callback,
+        )
     raise DetectorError(f"Unsupported detector type: {detector}")
 
 
