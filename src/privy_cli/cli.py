@@ -62,7 +62,7 @@ def anonymize_command(
         None,
         "--gliner-model",
         envvar="PRIVY_GLINER_MODEL",
-        help="GLiNER model name or path. Defaults to urchade/gliner_medium-v2.1.",
+        help="GLiNER model name or path. Defaults to urchade/gliner_large-v2.1.",
     ),
     entity_type: list[str] = typer.Option(
         ["PERSON", "COMPANY", "ADDRESS", "EMAIL", "PHONE", "DOC_ID", "NATIONAL_ID"],

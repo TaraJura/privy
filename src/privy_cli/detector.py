@@ -5,6 +5,8 @@ import re
 import shlex
 import subprocess
 import sys
+import threading
+import time
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -59,6 +61,42 @@ def _echo(message: str) -> None:
         typer.echo(message)
     except ImportError:
         print(message)  # noqa: T201
+
+
+class _Spinner:
+    """Animated terminal spinner for long-running operations."""
+
+    _FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+    def __init__(self, message: str) -> None:
+        self._message = message
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+
+    def update(self, message: str) -> None:
+        self._message = message
+
+    def stop(self, final_message: str = "") -> None:
+        self._stop.set()
+        if self._thread:
+            self._thread.join()
+        sys.stderr.write(f"\r\033[K")
+        if final_message:
+            sys.stderr.write(f"\033[32m✓\033[0m {final_message}\n")
+        sys.stderr.flush()
+
+    def _spin(self) -> None:
+        while not self._stop.is_set():
+            for frame in self._FRAMES:
+                if self._stop.is_set():
+                    break
+                sys.stderr.write(f"\r\033[K\033[36m{frame}\033[0m {self._message}")
+                sys.stderr.flush()
+                time.sleep(0.08)
 
 
 class BaseDetector(ABC):
@@ -162,7 +200,7 @@ def _get_default_models_dir() -> Path:
 class GlinerDetector(BaseDetector):
     def __init__(
         self,
-        model_name: str = "urchade/gliner_medium-v2.1",
+        model_name: str = "urchade/gliner_large-v2.1",
         threshold: float = 0.5,
         models_dir: Path | None = None,
     ) -> None:
@@ -177,27 +215,38 @@ class GlinerDetector(BaseDetector):
 
         local_dir = (models_dir or _get_default_models_dir()) / model_name.replace("/", "--")
         if (local_dir / "gliner_config.json").exists():
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                self._model = GLiNER.from_pretrained(str(local_dir))
+            spinner = _Spinner("Loading model...")
+            spinner.start()
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self._model = GLiNER.from_pretrained(str(local_dir))
+            finally:
+                spinner.stop("Model loaded")
         else:
             _echo(
-                f"Downloading GLiNER model ({model_name})...\n"
-                "This is a one-time download (~750 MB) and may take a few minutes."
+                f"Downloading GLiNER model ({model_name})\n"
+                "First run — this is a one-time download and may take a few minutes."
             )
+            spinner = _Spinner("Downloading model...")
+            spinner.start()
             try:
                 local_dir.mkdir(parents=True, exist_ok=True)
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     self._model = GLiNER.from_pretrained(model_name)
+                spinner.update("Saving model to local cache...")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
                     self._model.save_pretrained(str(local_dir))
             except (OSError, ConnectionError) as exc:
+                spinner.stop()
                 raise DetectorError(
                     f"Failed to download GLiNER model: {exc}\n"
                     "Check your internet connection and try again, or use "
                     "--detector heuristic for pattern-based detection (no download required)."
                 ) from exc
-            _echo(f"Model saved to {local_dir}")
+            spinner.stop(f"Model ready — cached at {local_dir}")
 
     _email_re = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
     _phone_re = re.compile(r"(?<!\w)\+?\d{1,3}[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}(?!\w)")
@@ -256,7 +305,7 @@ def build_detector(
             raise DetectorError("--model-cmd is required when detector is 'command'.")
         return CommandDetector(command=model_cmd)
     if detector_name == "gliner":
-        return GlinerDetector(model_name=gliner_model or "urchade/gliner_medium-v2.1")
+        return GlinerDetector(model_name=gliner_model or "urchade/gliner_large-v2.1")
     raise DetectorError(f"Unsupported detector type: {detector}")
 
 
@@ -266,7 +315,7 @@ def validate_command_detector(model_cmd: str) -> None:
 
 
 def validate_gliner_detector(gliner_model: str | None = None) -> None:
-    detector = GlinerDetector(model_name=gliner_model or "urchade/gliner_medium-v2.1")
+    detector = GlinerDetector(model_name=gliner_model or "urchade/gliner_large-v2.1")
     detector.detect("Jane Doe works at Acme LLC.")
 
 

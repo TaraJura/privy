@@ -175,7 +175,7 @@ APPLE_ID="..." TEAM_ID="..." APP_SPECIFIC_PASSWORD="..." \
 
 ## Environment Variables
 
-- `PRIVY_GLINER_MODEL` — GLiNER model name/path (default: `urchade/gliner_medium-v2.1`)
+- `PRIVY_GLINER_MODEL` — GLiNER model name/path (default: `urchade/gliner_large-v2.1`)
 - `PRIVY_MODEL_CMD` — model command for the `command` detector backend
 
 ## Key Design Decisions
