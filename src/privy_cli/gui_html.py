@@ -161,6 +161,21 @@ HTML = """\
     margin-right: 6px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Download progress bar */
+  .download-info { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .progress-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--drop-active);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
 </style>
 </head>
 <body>
@@ -197,7 +212,22 @@ HTML = """\
   // --- Global status updater (called from Python via evaluate_js) ---
   window.__privyUpdateStatus = function(msg) {
     status.className = 'status visible';
-    status.innerHTML = '<span class="spinner"></span><span class="message">' + escapeHtml(msg) + '</span>';
+    var dlMatch = msg.match(/^Downloading model — (\d+)%(.*)/);
+    if (dlMatch) {
+      var pct = parseInt(dlMatch[1]);
+      var detail = dlMatch[2].trim();
+      var text = 'Downloading model — ' + pct + '%';
+      if (detail) text += ' ' + detail;
+      status.innerHTML =
+        '<div class="download-info">' + escapeHtml(text) + '</div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
+    } else if (msg.match(/^Downloading AI model/)) {
+      status.innerHTML =
+        '<div class="download-info">' + escapeHtml(msg) + '</div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>';
+    } else {
+      status.innerHTML = '<span class="spinner"></span><span class="message">' + escapeHtml(msg) + '</span>';
+    }
   };
 
   // --- File selection ---

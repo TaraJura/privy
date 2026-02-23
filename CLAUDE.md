@@ -46,13 +46,13 @@ privy models validate
 
 ```
 src/privy_cli/
-├── __init__.py          # Package version (__version__ = "0.1.0")
+├── __init__.py          # Package version (__version__ = "0.2.2")
 ├── __main__.py          # Entry point — freeze_support(), launches GUI if frozen+no args, else CLI
 ├── types.py             # EntitySpan, SpanReplacement dataclasses; VALID_ENTITY_TYPES set
 ├── cli.py               # Typer CLI — no-arg launches GUI; commands: anonymize, deanonymize, gui, models list/validate
 ├── gui.py               # pywebview GUI — Api class (JS↔Python bridge), launch_gui()
 ├── gui_html.py          # Embedded HTML/CSS/JS for the GUI (single Python string constant)
-├── detector.py          # BaseDetector (ABC), GlinerDetector, CommandDetector, HeuristicDetector
+├── detector.py          # BaseDetector (ABC), GlinerDetector, CommandDetector, HeuristicDetector, _ProgressInterceptor
 ├── anonymizer.py        # anonymize_docx(), deanonymize_docx(), ProcessingReport, AnonymizationError
 ├── docx_engine.py       # ParagraphRef, iter_document_paragraphs(), paragraph_text(), apply_replacements_to_paragraph()
 └── mapping_store.py     # MappingData, write_mapping(), read_mapping(), MappingStoreError
@@ -193,3 +193,4 @@ APPLE_ID="..." TEAM_ID="..." APP_SPECIFIC_PASSWORD="..." \
 - **macOS packaging** — PyInstaller onedir + `.pkg` installer, signed/notarized for Gatekeeper
 - **GUI via pywebview** — native WebKit on macOS, Edge/WebView2 on Windows; HTML/CSS/JS embedded as Python string; drag-and-drop file input; auto-named outputs (`input_anonymized.docx`); map file auto-detection for deanonymize
 - **GUI detector caching** — `GlinerDetector` built once and reused across operations (thread-safe via `_detector_lock`)
+- **GUI download progress** — `_ProgressInterceptor` in `detector.py` wraps stderr during model download to capture tqdm output (percentage, size, speed) and forward it to the GUI via `progress_callback`; `gui_html.py` renders a visual progress bar for download messages

@@ -100,6 +100,55 @@ class _Spinner:
                 time.sleep(0.08)
 
 
+class _ProgressInterceptor:
+    """Wraps stderr to capture tqdm download progress and forward to a callback."""
+
+    _TQDM_RE = re.compile(r'(\d+)%\|')
+    _SIZE_RE = re.compile(r'\|\s*([\d.]+\w*)\s*/\s*([\d.]+\w*)')
+    _SPEED_RE = re.compile(r',\s*([\d.]+\s*\w+/s)')
+
+    def __init__(self, original: Any, callback: Callable[[str], None]) -> None:
+        self._original = original
+        self._callback = callback
+        self._last_update = 0.0
+
+    def write(self, text: str) -> int:
+        result = self._original.write(text)
+        now = time.monotonic()
+        if now - self._last_update < 0.5:
+            return result
+        for part in re.split(r'[\r\n]', text):
+            part = part.strip()
+            if not part:
+                continue
+            pct_match = self._TQDM_RE.search(part)
+            if not pct_match:
+                continue
+            pct = int(pct_match.group(1))
+            size_match = self._SIZE_RE.search(part)
+            speed_match = self._SPEED_RE.search(part)
+
+            msg = f"Downloading model — {pct}%"
+            if size_match:
+                msg += f" ({size_match.group(1)}/{size_match.group(2)})"
+            if speed_match:
+                msg += f" at {speed_match.group(1)}"
+
+            self._callback(msg)
+            self._last_update = now
+            break
+        return result
+
+    def flush(self) -> None:
+        self._original.flush()
+
+    def isatty(self) -> bool:
+        return self._original.isatty() if hasattr(self._original, 'isatty') else False
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._original, name)
+
+
 class BaseDetector(ABC):
     @abstractmethod
     def detect(self, text: str) -> list[EntitySpan]:
@@ -240,9 +289,16 @@ class GlinerDetector(BaseDetector):
             spinner.start()
             try:
                 local_dir.mkdir(parents=True, exist_ok=True)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    self._model = GLiNER.from_pretrained(model_name)
+                # Intercept stderr to capture tqdm progress for the GUI
+                original_stderr = sys.stderr
+                if progress_callback and original_stderr is not None:
+                    sys.stderr = _ProgressInterceptor(original_stderr, _report)  # type: ignore[assignment]
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        self._model = GLiNER.from_pretrained(model_name)
+                finally:
+                    sys.stderr = original_stderr
                 _report("Saving model to local cache...")
                 spinner.update("Saving model to local cache...")
                 with warnings.catch_warnings():
