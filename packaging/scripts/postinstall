@@ -1,6 +1,9 @@
 #!/bin/bash
 # postinstall — create CLI symlink and install Privy.app
 set -e
+# /usr/local/bin doesn't exist by default on Apple Silicon Macs (Homebrew lives
+# in /opt/homebrew), so create it before symlinking or `ln` fails the install.
+mkdir -p /usr/local/bin /usr/local/lib
 ln -sf /usr/local/lib/privy/privy /usr/local/bin/privy
 
 # Copy the .app wrapper to /Applications so it appears in Spotlight/Launchpad
